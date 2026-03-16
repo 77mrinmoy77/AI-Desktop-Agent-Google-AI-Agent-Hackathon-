@@ -1,0 +1,5 @@
+{
+  "name": "Live Agent Assistant",
+  "description": "Always-on screen monitoring & automation agent that acts as your hands on screen.",
+  "requestFramePermissions": ["display-capture", "microphone"]
+}

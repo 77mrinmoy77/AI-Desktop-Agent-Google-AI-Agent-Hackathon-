@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Desktop Agent</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            padding: 30px; 
+            background: #09090b; 
+            color: #f4f4f5; 
+        }
+        h2 { margin-top: 0; color: #a5b4fc; }
+        .input-group { display: flex; gap: 10px; margin-bottom: 20px; }
+        input { 
+            flex: 1;
+            padding: 12px; 
+            border-radius: 8px; 
+            border: 1px solid #3f3f46; 
+            background: #18181b; 
+            color: white; 
+            font-size: 16px;
+        }
+        button { 
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            background: #4f46e5; 
+            color: white;
+            font-weight: bold;
+            cursor: pointer; 
+            transition: background 0.2s;
+        }
+        button:hover { background: #4338ca; }
+        button:disabled { background: #3f3f46; cursor: not-allowed; }
+        #log { 
+            margin-top: 20px; 
+            padding: 15px; 
+            background: #000; 
+            font-family: "JetBrains Mono", monospace; 
+            font-size: 13px;
+            border-radius: 8px; 
+            min-height: 200px; 
+            border: 1px solid #27272a;
+            overflow-y: auto;
+            max-height: 400px;
+        }
+        .success { color: #4ade80; }
+        .error { color: #f87171; }
+        .info { color: #60a5fa; }
+    </style>
+</head>
+<body>
+    <h2>AI Desktop Agent</h2>
+    <p>Enter a command. The Python backend will take a screenshot, process it with Gemini, and physically move your mouse.</p>
+    
+    <div class="input-group">
+        <input type="text" id="command" placeholder="e.g., Open the fibonacci heap video" />
+        <button id="executeBtn">Execute</button>
+    </div>
+    
+    <div id="log"><span class="success">System Ready. Waiting for commands...</span></div>
+
+    <script>
+        const executeBtn = document.getElementById('executeBtn');
+        const commandInput = document.getElementById('command');
+        const logDiv = document.getElementById('log');
+
+        function appendLog(message, type = 'info') {
+            logDiv.innerHTML += `<br/><span class="${type}">[${new Date().toLocaleTimeString()}] ${message}</span>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        executeBtn.addEventListener('click', async () => {
+            const command = commandInput.value;
+            if (!command) return;
+
+            appendLog(`Executing: "${command}"...`, 'info');
+            executeBtn.disabled = true;
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/execute', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ command })
+                });
+                const result = await response.json();
+                
+                if (result.error) {
+                    appendLog(`Error: ${result.error}`, 'error');
+                } else {
+                    appendLog(`Action: ${result.action} at (${result.coordinates?.x}, ${result.coordinates?.y})`, 'success');
+                    appendLog(`Status: ${result.status}`, 'success');
+                }
+            } catch (err) {
+                appendLog(`Connection Error: Make sure the Python server is running. (${err.message})`, 'error');
+            } finally {
+                executeBtn.disabled = false;
+            }
+        });
+
+        // Allow pressing Enter to submit
+        commandInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') executeBtn.click();
+        });
+    </script>
+</body>
+</html>
